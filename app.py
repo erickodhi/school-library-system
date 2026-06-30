@@ -1,10 +1,9 @@
 from flask import Flask, render_template
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
-# This explicitly maps the main domain link "/" to our admin page
 @app.route('/')
-def home():
+def index():
     return render_template('admin.html')
 
 if __name__ == '__main__':
