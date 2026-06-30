@@ -17,7 +17,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False) # 'Admin' or 'Librarian'
+    role = db.Column(db.String(20), nullable=False) 
 
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -36,9 +36,16 @@ class Book(db.Model):
 # ROUTES & WORKSPACE
 # =======================================================
 
+# THIS IS THE UPDATED CODE PLACED PERFECTLY HERE:
 @app.route('/')
 def admin_panel():
-    return render_template('admin.html')
+    # Fetch all records from the database
+    librarians = User.query.filter_by(role='Librarian').all()
+    students = Student.query.all()
+    books = Book.query.all()
+    
+    # Send them to the template
+    return render_template('admin.html', librarians=librarians, students=students, books=books)
 
 @app.route('/add_librarian', methods=['POST'])
 def add_librarian():
