@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AMABUKO LIBRARY MANAGEMENT SYSTEM</title>
+    <title>Institution Library System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light p-4">
 
-    <div class="container-fluid mx-auto" style="max-width: 1200px;">
-        <h2 class="fw-bold text-dark mb-4">🏫 AMABUKO LIBRARY MANAGEMENT SYSTEM</h2>
+    <div class="container-fluid mx-auto" style="max-width: 1400px;">
+        <h2 class="fw-bold text-dark mb-4">🏫 Institution Administration Dashboard</h2>
         
         <div class="row g-4">
-            <div class="col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body p-4">
                         <h5 class="fw-bold text-warning mb-3">📚 Add New Book</h5>
@@ -31,7 +31,7 @@
                 </div>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm border-0 h-100">
                     <div class="card-body p-4">
                         <h5 class="fw-bold text-info mb-3">👤 Add New Student</h5>
@@ -42,9 +42,32 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label small fw-bold">Full Name</label>
-                                <input type="text" name="student_name_from_html" class="form-control" placeholder="e.g. John Doe" required>
+                                <input type="text" name="student_name_from_html" class="form-control" placeholder="e.g. Jane Doe" required>
                             </div>
                             <button type="submit" class="btn btn-info w-100 fw-bold text-white">Save Student</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-12">
+                <div class="card shadow-sm border-0 h-100 bg-white border-start border-4 border-success">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-success mb-3">🔑 Register Librarian Staff</h5>
+                        <form action="/save_librarian" method="POST">
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Employee ID / Code</label>
+                                <input type="text" name="lib_id_from_html" class="form-control" placeholder="e.g. LIB-01" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Librarian Name</label>
+                                <input type="text" name="lib_name_from_html" class="form-control" placeholder="e.g. Mercy Chepkoech" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Assign Password</label>
+                                <input type="password" name="lib_password_from_html" class="form-control" placeholder="Minimum 6 characters" required>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold">Register Staff Account</button>
                         </form>
                     </div>
                 </div>
@@ -52,20 +75,15 @@
         </div>
 
         <div class="row g-4 mt-2">
-            <div class="col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
                         <h5 class="fw-bold text-dark mb-3">📖 Book Inventory</h5>
                         <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr><th>ID</th><th>Title</th></tr>
-                            </thead>
+                            <thead class="table-light"><tr><th>ID</th><th>Title</th></tr></thead>
                             <tbody>
                                 {% for book in books %}
-                                <tr>
-                                    <td class="fw-bold text-secondary">{{ book.unique_id }}</td>
-                                    <td>{{ book.title }}</td>
-                                </tr>
+                                <tr><td class="fw-bold text-secondary">{{ book.unique_id }}</td><td>{{ book.title }}</td></tr>
                                 {% else %}
                                 <tr><td colspan="2" class="text-center text-muted small py-3">No books registered.</td></tr>
                                 {% endfor %}
@@ -75,22 +93,35 @@
                 </div>
             </div>
 
-            <div class="col-md-6">
+            <div class="col-lg-4 col-md-6">
                 <div class="card shadow-sm border-0">
                     <div class="card-body p-4">
                         <h5 class="fw-bold text-dark mb-3">👥 Registered Students</h5>
                         <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr><th>Adm No</th><th>Student Name</th></tr>
-                            </thead>
+                            <thead class="table-light"><tr><th>Adm No</th><th>Student Name</th></tr></thead>
                             <tbody>
                                 {% for student in students %}
-                                <tr>
-                                    <td class="fw-bold text-secondary">{{ student.admission_no }}</td>
-                                    <td>{{ student.name }}</td>
-                                </tr>
+                                <tr><td class="fw-bold text-secondary">{{ student.admission_no }}</td><td>{{ student.name }}</td></tr>
                                 {% else %}
                                 <tr><td colspan="2" class="text-center text-muted small py-3">No students registered yet.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-dark mb-3">🔒 Authorized Staff Accounts</h5>
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light"><tr><th>Emp ID</th><th>Staff Name</th></tr></thead>
+                            <tbody>
+                                {% for librarian in librarians %}
+                                <tr><td class="fw-bold text-success">{{ librarian.employee_id }}</td><td>{{ librarian.name }}</td></tr>
+                                {% else %}
+                                <tr><td colspan="2" class="text-center text-muted small py-3">No staff registered yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>

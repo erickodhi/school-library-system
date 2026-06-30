@@ -1,3 +1,4 @@
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
@@ -29,10 +30,11 @@ with app.app_context():
 @app.route('/')
 def home():
     all_books = Book.query.all()
-    all_students = Student.query.all()  # <-- Add this line
+    all_students = Student.query.all()
+    all_librarians = Librarian.query.all() # <-- Add this line
     
-    # Update this line to pass 'students' as well:
-    return render_template('admin.html', books=all_books, students=all_students)
+    # Update the return statement to include librarians:
+    return render_template('admin.html', books=all_books, students=all_students, librarians=all_librarians)
 # ==================================================
 
 # 3. ROUTE TO SAVE AND REDIRECT HOME
@@ -57,6 +59,24 @@ def save_student():
     db.session.commit()
     return redirect(url_for('home'))
 # ====================================================
+class Librarian(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    @app.route('/save_librarian', methods=['POST'])
+def save_librarian():
+    html_emp_id = request.form.get('lib_id_from_html')
+    html_name = request.form.get('lib_name_from_html')
+    html_password = request.form.get('lib_password_from_html')
+    
+    # Securely scramble the password before saving
+    secure_password = generate_password_hash(html_password)
+    
+    new_librarian = Librarian(employee_id=html_emp_id, name=html_name, password_hash=secure_password)
+    db.session.add(new_librarian)
+    db.session.commit()
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
