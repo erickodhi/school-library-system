@@ -8,7 +8,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # ==========================================
-# 1. OUR DATABASE MODELS (Storage)
+# 1. DATABASE MODELS (Tables)
 # ==========================================
 
 class Book(db.Model):
@@ -27,12 +27,12 @@ class Librarian(db.Model):
     name = db.Column(db.String(150), nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
 
-# Force initialization of tables
+# Recreate tables cleanly on startup
 with app.app_context():
     db.create_all()
 
 # ==========================================
-# 2. ROUTES TO SHOW AND SAVE DATA
+# 2. APPLICATION ROUTES
 # ==========================================
 
 @app.route('/')
