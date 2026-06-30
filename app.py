@@ -1,41 +1,35 @@
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fresh_library.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# 1. OUR DATABASE MODEL
+# ==========================================
+# 1. OUR DATABASE MODELS (Storage)
+# ==========================================
+
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     unique_id = db.Column(db.String(50), unique=True, nullable=False)
     title = db.Column(db.String(150), nullable=False)
-    # --------------------
-    # ======= PASTE THIS RIGHT BELOW CLASS BOOK =======
+
 class Student(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     admission_no = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(150), nullable=False)
-# ================================================
 
-# ====== MOVED OUTSIDE THE MAIN BLOCK FOR RENDER/GUNICORN ======
+class Librarian(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    employee_id = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+# Force initialization of tables
 with app.app_context():
-    db.create_all() # This forces Render to create the tables on startup!
-# ==============================================================
-
-# 2. ROUTE TO SHOW THE PAGE + THE LIST OF BOOKS
-# ======= REPLACE YOUR HOME ROUTE WITH THIS =======
-@app.route('/')
-def home():
-    all_books = Book.query.all()
-    all_students = Student.query.all()
-    all_librarians = Librarian.query.all() # <-- Add this line
-    
-    # Update the return statement to include librarians:
-    return render_template('admin.html', books=all_books, students=all_students, librarians=all_librarians)
-# ==================================================
+    db.create_all()
 
 # ==========================================
 # 2. ROUTES TO SHOW AND SAVE DATA
