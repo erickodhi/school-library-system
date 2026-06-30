@@ -1,10 +1,11 @@
-from flask import Flask
+from flask import Flask, render_template
 
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "<h1>School Library Management System</h1><p>Status: Under Development (Live Progress Tracking)</p>"
+    # render_template searches inside your 'templates' folder automatically
+    return render_template('dashboard.html')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app.run(debug=True)
