@@ -113,6 +113,29 @@ def issue_book():
     
     flash(f'✅ Success: "{book_exists.title}" issued to {student_exists.name}!', 'success')
     return redirect(url_for('librarian_desk'))
+    @app.route('/return_book', methods=['POST'])
+def return_book():
+    input_book_id = request.form.get('book_id')
+    
+    # Find the active loan entry where this book ID matches and has NOT been returned yet
+    active_loan = BorrowedBook.query.filter_by(book_id=input_book_id, return_date=None).first()
+    
+    if active_loan:
+        # Stamp it with today's date to close the transaction
+        today = datetime.today().strftime('%d-%m-%Y')
+        active_loan.return_date = today
+        db.session.commit()
+        
+        # Get book title details to make the success message descriptive
+        book_details = Book.query.filter_by(unique_id=input_book_id).first()
+        title = book_details.title if book_details else "Book"
+        
+        flash(f'✅ Success: "{title}" has been successfully returned to shelves!', 'success')
+    else:
+        # If the book wasn't flagged as borrowed out in our system
+        flash(f'❌ Error: Book ID "{input_book_id}" is not marked as currently borrowed out!', 'danger')
+        
+    return redirect(url_for('librarian_desk'))
 
 # Gateway 5: Save a new Book
 @app.route('/save_book', methods=['POST'])
