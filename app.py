@@ -38,19 +38,20 @@ with app.app_context():
 def login_page():
     return render_template('login.html')
     # Gateway 3: Process the entered Login Credentials
+# Gateway 3: Process the entered Login Credentials with Split Routing Rules
 @app.route('/process_login', methods=['POST'])
 def process_login():
     input_id = request.form.get('login_id')
     input_password = request.form.get('login_password')
     
-    # 🔑 NEW: THE MASTER KEY BYPASS
+    # Rule A: If Master Admin logs in -> Go to the Admin Dashboard
     if input_id == "ADMIN" and input_password == "12345":
-        return redirect(url_for('home')) # Let them straight into the dashboard
+        return redirect(url_for('home')) 
         
-    # Standard database check (for librarians you register later)
+    # Rule B: If a standard Librarian logs in -> Go to the Librarian Desk
     librarian = Librarian.query.filter_by(employee_id=input_id).first()
     if librarian and check_password_hash(librarian.password_hash, input_password):
-        return redirect(url_for('home'))
+        return redirect(url_for('librarian_desk'))
     else:
         return redirect(url_for('login_page'))
 @app.route('/dashboard')
@@ -59,6 +60,11 @@ def home():
     all_students = Student.query.all()
     all_librarians = Librarian.query.all()
     return render_template('admin.html', books=all_books, students=all_students, librarians=all_librarians)
+
+# Gateway 2B: The New Librarian Workstation Desk (For Staff accounts only)
+@app.route('/librarian_desk')
+def librarian_desk():
+    return render_template('librarian.html')
 
 @app.route('/save_book', methods=['POST'])
 def save_book():
