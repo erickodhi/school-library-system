@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime  # <-- Added to automatically capture transaction dates
+from datetime import datetime
 
 app = Flask(__name__)
+# 🔑 Added secret key so Flask can safely display pop-up notification alerts
+app.secret_key = 'super_secret_library_key'
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fresh_library.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
@@ -28,13 +31,12 @@ class Librarian(db.Model):
     name = db.Column(db.String(150), nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
 
-# 🔄 NEW table to track which books are linked to which students
 class BorrowedBook(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    student_id = db.Column(db.String(50), nullable=False)  # Student's Admission Number
-    book_id = db.Column(db.String(50), nullable=False)     # Book's Unique ID Barcode
-    issue_date = db.Column(db.String(20), nullable=False)   # Date borrowed
-    return_date = db.Column(db.String(20), nullable=True)   # Left empty until returned
+    student_id = db.Column(db.String(50), nullable=False)
+    book_id = db.Column(db.String(50), nullable=False)
+    issue_date = db.Column(db.String(20), nullable=False)
+    return_date = db.Column(db.String(20), nullable=True)  # Stays blank until book returns
 
 # Recreate tables cleanly on system startup
 with app.app_context():
@@ -44,12 +46,12 @@ with app.app_context():
 # 2. APPLICATION ROUTES (Gateways & Logic)
 # ==========================================
 
-# Gateway 1: Show the Staff Login Portal first when opening the link
+# Gateway 1: Show the Staff Login Portal first
 @app.route('/')
 def login_page():
     return render_template('login.html')
 
-# Gateway 2: The Master Administration Dashboard (For ADMIN user only)
+# Gateway 2: Master Administration Dashboard (For ADMIN master key only)
 @app.route('/dashboard')
 def home():
     all_books = Book.query.all()
@@ -57,49 +59,62 @@ def home():
     all_librarians = Librarian.query.all()
     return render_template('admin.html', books=all_books, students=all_students, librarians=all_librarians)
 
-# Gateway 2B: The Librarian Workstation Desk (For Staff accounts only)
+# Gateway 2B: Librarian Operational Desk (Fetches all issued records)
 @app.route('/librarian_desk')
 def librarian_desk():
-    return render_template('librarian.html')
+    all_loans = BorrowedBook.query.all()
+    return render_template('librarian.html', loans=all_loans)
 
-# Gateway 3: Process the entered Login Credentials with Split Routing Rules
+# Gateway 3: Process Login Credentials with Split Traffic Controls
 @app.route('/process_login', methods=['POST'])
 def process_login():
     input_id = request.form.get('login_id')
     input_password = request.form.get('login_password')
     
-    # Rule A: If Master Admin logs in -> Go to the Admin Dashboard
     if input_id == "ADMIN" and input_password == "12345":
         return redirect(url_for('home')) 
         
-    # Rule B: If a standard Librarian logs in -> Go to the Librarian Desk
     librarian = Librarian.query.filter_by(employee_id=input_id).first()
     if librarian and check_password_hash(librarian.password_hash, input_password):
         return redirect(url_for('librarian_desk'))
     else:
         return redirect(url_for('login_page'))
 
-# 🔄 NEW Gateway: Processes the book issue transaction from the Librarian page
+# Gateway 4: Safe Book Borrowing System (Strict Inventory Verification)
 @app.route('/issue_book', methods=['POST'])
 def issue_book():
     input_adm = request.form.get('student_adm')
     input_book_id = request.form.get('book_id')
     
-    # Verify if the student and book actually exist in our database inventory
     student_exists = Student.query.filter_by(admission_no=input_adm).first()
     book_exists = Book.query.filter_by(unique_id=input_book_id).first()
     
-    if student_exists and book_exists:
-        today = datetime.today().strftime('%d-%m-%Y') # Captures active date
+    # Verification Rule 1: Student must exist
+    if not student_exists:
+        flash('❌ Error: This Student Admission Number is not registered!', 'danger')
+        return redirect(url_for('librarian_desk'))
         
-        # Save transaction entry
-        new_loan = BorrowedBook(student_id=input_adm, book_id=input_book_id, issue_date=today)
-        db.session.add(new_loan)
-        db.session.commit()
-        
+    # Verification Rule 2: Book barcode must exist in the system registry
+    if not book_exists:
+        flash(f'❌ Error: Book ID "{input_book_id}" does not exist in the system inventory!', 'danger')
+        return redirect(url_for('librarian_desk'))
+    
+    # Verification Rule 3: Book must not be already out
+    already_borrowed = BorrowedBook.query.filter_by(book_id=input_book_id, return_date=None).first()
+    if already_borrowed:
+        flash('⚠ Warning: This book is currently out with another student!', 'warning')
+        return redirect(url_for('librarian_desk'))
+
+    # Success Flow: If all guards pass, lock the transaction down
+    today = datetime.today().strftime('%d-%m-%Y')
+    new_loan = BorrowedBook(student_id=input_adm, book_id=input_book_id, issue_date=today)
+    db.session.add(new_loan)
+    db.session.commit()
+    
+    flash(f'✅ Success: "{book_exists.title}" issued to {student_exists.name}!', 'success')
     return redirect(url_for('librarian_desk'))
 
-# Gateway 4: Save a new Book to the database
+# Gateway 5: Save a new Book
 @app.route('/save_book', methods=['POST'])
 def save_book():
     html_id = request.form.get('book_id_from_html')
@@ -110,7 +125,7 @@ def save_book():
     db.session.commit()
     return redirect(url_for('home'))
 
-# Gateway 5: Save a new Student to the database
+# Gateway 6: Save a new Student
 @app.route('/save_student', methods=['POST'])
 def save_student():
     html_adm = request.form.get('student_adm_from_html')
@@ -121,7 +136,7 @@ def save_student():
     db.session.commit()
     return redirect(url_for('home'))
 
-# Gateway 6: Register a new Librarian (With password hashing)
+# Gateway 7: Register a new Librarian
 @app.route('/save_librarian', methods=['POST'])
 def save_librarian():
     html_emp_id = request.form.get('lib_id_from_html')
