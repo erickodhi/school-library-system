@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-# 🔑 Added secret key so Flask can safely display pop-up notification alerts
+# 🔑 Secret key for notification alerts
 app.secret_key = 'super_secret_library_key'
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///fresh_library.db'
@@ -36,7 +36,7 @@ class BorrowedBook(db.Model):
     student_id = db.Column(db.String(50), nullable=False)
     book_id = db.Column(db.String(50), nullable=False)
     issue_date = db.Column(db.String(20), nullable=False)
-    return_date = db.Column(db.String(20), nullable=True)  # Stays blank until book returns
+    return_date = db.Column(db.String(20), nullable=True)  # Blank until book returns
 
 # Recreate tables cleanly on system startup
 with app.app_context():
@@ -46,12 +46,12 @@ with app.app_context():
 # 2. APPLICATION ROUTES (Gateways & Logic)
 # ==========================================
 
-# Gateway 1: Show the Staff Login Portal first
+# Gateway 1: Staff Login Portal
 @app.route('/')
 def login_page():
     return render_template('login.html')
 
-# Gateway 2: Master Administration Dashboard (For ADMIN master key only)
+# Gateway 2: Master Administration Dashboard (ADMIN user only)
 @app.route('/dashboard')
 def home():
     all_books = Book.query.all()
@@ -59,13 +59,13 @@ def home():
     all_librarians = Librarian.query.all()
     return render_template('admin.html', books=all_books, students=all_students, librarians=all_librarians)
 
-# Gateway 2B: Librarian Operational Desk (Fetches all issued records)
+# Gateway 2B: Librarian Operational Desk Workspace
 @app.route('/librarian_desk')
 def librarian_desk():
     all_loans = BorrowedBook.query.all()
     return render_template('librarian.html', loans=all_loans)
 
-# Gateway 3: Process Login Credentials with Split Traffic Controls
+# Gateway 3: Process Login Credentials
 @app.route('/process_login', methods=['POST'])
 def process_login():
     input_id = request.form.get('login_id')
@@ -80,7 +80,7 @@ def process_login():
     else:
         return redirect(url_for('login_page'))
 
-# Gateway 4: Safe Book Borrowing System (Strict Inventory Verification)
+# Gateway 4: Issue Book Engine
 @app.route('/issue_book', methods=['POST'])
 def issue_book():
     input_adm = request.form.get('student_adm')
@@ -89,23 +89,19 @@ def issue_book():
     student_exists = Student.query.filter_by(admission_no=input_adm).first()
     book_exists = Book.query.filter_by(unique_id=input_book_id).first()
     
-    # Verification Rule 1: Student must exist
     if not student_exists:
         flash('❌ Error: This Student Admission Number is not registered!', 'danger')
         return redirect(url_for('librarian_desk'))
         
-    # Verification Rule 2: Book barcode must exist in the system registry
     if not book_exists:
         flash(f'❌ Error: Book ID "{input_book_id}" does not exist in the system inventory!', 'danger')
         return redirect(url_for('librarian_desk'))
     
-    # Verification Rule 3: Book must not be already out
     already_borrowed = BorrowedBook.query.filter_by(book_id=input_book_id, return_date=None).first()
     if already_borrowed:
         flash('⚠ Warning: This book is currently out with another student!', 'warning')
         return redirect(url_for('librarian_desk'))
 
-    # Success Flow: If all guards pass, lock the transaction down
     today = datetime.today().strftime('%d-%m-%Y')
     new_loan = BorrowedBook(student_id=input_adm, book_id=input_book_id, issue_date=today)
     db.session.add(new_loan)
@@ -113,26 +109,24 @@ def issue_book():
     
     flash(f'✅ Success: "{book_exists.title}" issued to {student_exists.name}!', 'success')
     return redirect(url_for('librarian_desk'))
-    @app.route('/return_book', methods=['POST'])
+
+# Gateway 4B: Return Book Engine
+@app.route('/return_book', methods=['POST'])
 def return_book():
     input_book_id = request.form.get('book_id')
     
-    # Find the active loan entry where this book ID matches and has NOT been returned yet
     active_loan = BorrowedBook.query.filter_by(book_id=input_book_id, return_date=None).first()
     
     if active_loan:
-        # Stamp it with today's date to close the transaction
         today = datetime.today().strftime('%d-%m-%Y')
         active_loan.return_date = today
         db.session.commit()
         
-        # Get book title details to make the success message descriptive
         book_details = Book.query.filter_by(unique_id=input_book_id).first()
         title = book_details.title if book_details else "Book"
         
         flash(f'✅ Success: "{title}" has been successfully returned to shelves!', 'success')
     else:
-        # If the book wasn't flagged as borrowed out in our system
         flash(f'❌ Error: Book ID "{input_book_id}" is not marked as currently borrowed out!', 'danger')
         
     return redirect(url_for('librarian_desk'))
