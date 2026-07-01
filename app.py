@@ -43,14 +43,16 @@ def process_login():
     input_id = request.form.get('login_id')
     input_password = request.form.get('login_password')
     
-    # Check if this Employee ID exists in the Librarian table
+    # 🔑 NEW: THE MASTER KEY BYPASS
+    if input_id == "ADMIN" and input_password == "12345":
+        return redirect(url_for('home')) # Let them straight into the dashboard
+        
+    # Standard database check (for librarians you register later)
     librarian = Librarian.query.filter_by(employee_id=input_id).first()
-    
-    # Verify if user exists and if their typed password matches the scrambled hash
     if librarian and check_password_hash(librarian.password_hash, input_password):
-        return redirect(url_for('home'))        # Access Granted -> Go to Dashboard
+        return redirect(url_for('home'))
     else:
-        return redirect(url_for('login_page'))  # Access Denied -> Reload Login Screen
+        return redirect(url_for('login_page'))
 @app.route('/dashboard')
 def home():
     all_books = Book.query.all()
