@@ -34,8 +34,24 @@ with app.app_context():
 # ==========================================
 # 2. APPLICATION ROUTES
 # ==========================================
-
 @app.route('/')
+def login_page():
+    return render_template('login.html')
+    # Gateway 3: Process the entered Login Credentials
+@app.route('/process_login', methods=['POST'])
+def process_login():
+    input_id = request.form.get('login_id')
+    input_password = request.form.get('login_password')
+    
+    # Check if this Employee ID exists in the Librarian table
+    librarian = Librarian.query.filter_by(employee_id=input_id).first()
+    
+    # Verify if user exists and if their typed password matches the scrambled hash
+    if librarian and check_password_hash(librarian.password_hash, input_password):
+        return redirect(url_for('home'))        # Access Granted -> Go to Dashboard
+    else:
+        return redirect(url_for('login_page'))  # Access Denied -> Reload Login Screen
+@app.route('/dashboard')
 def home():
     all_books = Book.query.all()
     all_students = Student.query.all()
