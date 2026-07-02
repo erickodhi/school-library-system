@@ -23,16 +23,25 @@
                     <div class="card-body p-4">
                         <h5 class="fw-bold text-warning mb-3">📚 Add New Book</h5>
                         <form action="/save_book" method="POST">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Book Unique ID</label>
-                                <input type="text" name="book_id_from_html" class="form-control" placeholder="e.g. BK-101" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Book Title</label>
-                                <input type="text" name="book_title_from_html" class="form-control" placeholder="e.g. KLB Mathematics" required>
-                            </div>
-                            <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Save Book</button>
-                        </form>
+    
+    <div class="mb-3">
+        <label class="form-label small fw-bold">Select Master Book Title</label>
+        <select name="book_title_from_html" class="form-select" required>
+            <option value="" disabled selected>-- Choose Approved Title --</option>
+            {% for item in master_catalog %}
+                <option value="{{ item.title }}">{{ item.title }}</option>
+            {% endfor %}
+        </select>
+        <div class="form-text text-muted small">Titles must be authorized by Super Admin first.</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label small fw-bold">Scan or Enter Book Unique ID Barcode</label>
+        <input type="text" name="book_id_from_html" class="form-control" placeholder="e.g., BK-9905" required>
+    </div>
+
+    <button type="submit" class="btn btn-success w-100 fw-bold">Register Physical Book Copy</button>
+</form>
                     </div>
                 </div>
             </div>
